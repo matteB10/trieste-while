@@ -48,6 +48,8 @@ namespace whilelang
 
   // Grouping tokens
   inline const auto Paren = TokenDef("paren");
+  inline const auto Brace = TokenDef("brace");
+
   inline const auto Stmt = TokenDef("stmt");
   inline const auto Expr = TokenDef("expr"); // Not yet decided if arithmetic or boolean
   inline const auto AExpr = TokenDef("aexpr");

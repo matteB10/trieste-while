@@ -10,13 +10,19 @@ Reader reader()
   {
     return {
       "while",
-      {grouping(),
-       assignments(),
-       conditionals(),
-       loops(),
-       atoms(),
-       multiplication(),
-       addsub(),
+      {
+        expressions(),
+        statements(),
+//       atoms(),
+//       multiplication(),
+//       addsub(),
+//       comparison(),
+//       conjunction(),
+//       disjunction(),
+//       assignments(),
+//       loops(),
+//       conditionals(),
+//       expressions(),
       },
       whilelang::parser(),
     };

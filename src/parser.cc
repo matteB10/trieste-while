@@ -10,18 +10,50 @@ namespace whilelang
   {
     Parse p(depth::file, parse_wf);
 
-    auto term_all = [](Make &m, std::initializer_list<Token> tokens) {
-      bool progress = true;
-      while (progress) {
-        progress = false;
-        for (auto &t : tokens) {
-          if (m.in(t) || m.group_in(t)) {
-            m.term({t});
-            progress = true;
-            break;
-          }
-        }
+    auto infix = [](Make& m, Token t) {
+      // This precedence table maps infix operators to the operators that have
+      // *higher* precedence, and which should therefore be terminated when that
+      // operator is encountered. Note that operators with the same precedence
+      // terminate each other. (for reasons, it has to be defined inside the lambda)
+      const auto precedence_table = std::map<Token, std::initializer_list<Token>> {
+        {Mul, {}},
+        {Add, {Sub, Mul}},
+        {Sub, {Add, Mul}},
+        {LT, {Add, Sub, Mul, Equals}},
+        {Equals, {Add, Sub, Mul, LT}},
+        {And, {Add, Sub, Mul, LT, Equals}},
+        {Or, {Add, Sub, Mul, LT, Equals, And}},
+        {Assign, {Add, Sub, Mul, Equals, LT, And, Or}},
+      };
+
+      auto skip = precedence_table.at(t);
+      m.seq(t, skip);
+      // Push group to be able to check that an operand follows
+      m.push(Group);
+    };
+
+    auto pop_until = [](Make &m, Token t, std::initializer_list<Token> stop = {File}) {
+      while (!m.in(t) && !m.group_in(t)
+             && !m.in(stop)) {
+        m.term();
+        m.pop();
       }
+
+      return (m.in(t) || m.group_in(t));
+    };
+
+    auto pair_with = [pop_until](Make &m, Token preceding, Token following) {
+      pop_until(m, preceding, {Paren, File});
+      m.term();
+
+      if (!m.in(preceding)) {
+        const std::string msg = (std::string) "Unexpected '" + following.str() + "'";
+        m.error(msg);
+        return;
+      }
+
+      m.pop(preceding);
+      m.push(following);
     };
 
     p("start",
@@ -33,48 +65,49 @@ namespace whilelang
         "//[^\n]*" >> [](auto&) {}, // no-op
 
         // Statements
-        ":=" >> [](auto& m) {m.add(Assign); },
+        ":=" >> [infix](auto& m) { infix(m, Assign); },
 
-        "skip" >> [](auto& m) {m.add(Skip); },
+        "skip" >> [](auto& m) { m.add(Skip); },
 
-        ";" >> [term_all](auto& m) {term_all(m, {Else, Do}); m.seq(Semi); },
+        ";" >> [](auto& m) { m.seq(Semi, {Add, Sub, Mul, Equals, LT, And, Or, Assign, Else, Do, Group}); },
 
-        "if\\b" >> [](auto& m) {m.push(If); },
-        "then\\b" >> [](auto& m) {m.term(); m.pop({If}); m.push(Then); },
-        "else\\b" >> [term_all](auto& m) {term_all(m, {Semi, Else, Do}); m.term(); m.pop(Then); m.push(Else); },
+        "if\\b" >> [](auto& m) { m.push(If); },
+        "then\\b" >> [pair_with](auto& m) { pair_with(m, If, Then); },
+        "else\\b" >> [pair_with](auto& m) { pair_with(m, Then, Else); },
 
-        "while\\b" >> [](auto& m) {m.push(While); },
-        "do\\b" >> [](auto& m) {m.term(); m.pop({While}); m.push(Do); },
+        "while\\b" >> [](auto& m) { m.push(While); },
+        "do\\b" >> [pair_with](auto& m) { pair_with(m, While, Do); },
 
         // Expressions
-        R"(\+)" >> [](auto& m) {m.add(Add); },
-        "-" >> [](auto& m) {m.add(Sub); },
-        R"(\*)" >> [](auto& m) {m.add(Mul); },
+        R"(\+)" >> [infix](auto& m) { infix(m, Add); },
+        "-" >> [infix](auto& m) { infix(m, Sub); },
+        R"(\*)" >> [infix](auto& m) { infix(m, Mul); },
 
-        "and\\b" >> [](auto& m) {m.add(And); },
-        "or\\b" >> [](auto& m) {m.add(Or); },
-        "not\\b" >> [](auto& m) {m.add(Not); },
+        "and\\b" >> [infix](auto& m) { infix(m, And); },
+        "or\\b" >>  [infix](auto& m) { infix(m, Or); },
+        "not\\b" >> [](auto& m) { m.add(Not); },
 
-        "<" >> [](auto& m) {m.add(LT); },
-        "=" >> [](auto& m) {m.add(Equals); },
+        "<" >> [infix](auto& m) { infix(m, LT); },
+        "=" >> [infix](auto& m) { infix(m, Equals); },
 
-        "true\\b" >> [](auto& m) {m.add(True); },
-        "false\\b" >> [](auto& m) {m.add(False); },
+        "true\\b" >> [](auto& m) { m.add(True); },
+        "false\\b" >> [](auto& m) { m.add(False); },
 
         "[[:digit:]]+" >> [](auto& m) { m.add(Int); },
 
         // Variables
         R"([_[:alpha:]][_[:alnum:]]*)" >> [](auto& m) { m.add(Ident); },
 
-        // Grouping
         "\\(" >> [](auto& m) { m.push(Paren); },
-        "\\)" >> [term_all](auto& m) { term_all(m, {Else, Do, Semi}); m.term(); m.pop(Paren); },
+        "\\)" >> [pop_until](auto& m) { pop_until(m, Paren, {Brace}); m.term(); m.pop(Paren); },
+
+        "\\{" >> [](auto& m) { m.push(Brace); },
+        "\\}" >> [pop_until](auto& m) { pop_until(m, Brace, {Paren}); m.term(); m.pop(Brace); },
     }
     );
 
-    p.done([term_all](auto& m) {
-        term_all(m, {Else, Do});
-        m.term({Semi});
+    p.done([pop_until](auto& m) {
+        pop_until(m, File, {Paren, If, Then, While});
     });
     return p;
   }

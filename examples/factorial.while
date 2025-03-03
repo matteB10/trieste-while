@@ -1,5 +1,6 @@
 p := 1;
 i := n;
-while 0 < n do
-  (p := i * p;
-   i := i - 1)
+while 0 < n do {
+  p := i * p;
+  i := i - 1;
+}
