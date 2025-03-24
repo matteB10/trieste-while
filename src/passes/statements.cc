@@ -65,6 +65,27 @@ namespace whilelang
                                      << (ErrorMsg ^ "Unexpected statement");
                     },
 
+                T(Assign) << ((T(AExpr) << T(Ident)) * Any[Rhs]) >>
+                    [](Match &_) -> Node
+                    {
+                        return Error << (ErrorAst << _(Rhs))
+                                     << (ErrorMsg ^ "Invalid right-hand side to assignment");
+                    },
+
+                T(Assign)[Assign] << ((T(AExpr) << T(Ident)) * (T(Group) << End)) >>
+                    [](Match &_) -> Node
+                    {
+                        return Error << (ErrorAst << _(Assign))
+                                     << (ErrorMsg ^ "Expected right-hand side to assignment");
+                    },
+
+                T(Assign)[Assign] << Any >>
+                    [](Match &_) -> Node
+                    {
+                        return Error << (ErrorAst << _(Assign))
+                                     << (ErrorMsg ^ "Invalid left-hand side to assignment");
+                    },
+
                 T(If) * (!T(Then))[Stmt] >>
                     [](Match &_) -> Node
                     {

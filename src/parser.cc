@@ -28,7 +28,7 @@ namespace whilelang
 
       auto skip = precedence_table.at(t);
       m.seq(t, skip);
-      // Push group to be able to check that an operand follows
+      // Push group to be able to check whether an operand follows
       m.push(Group);
     };
 
@@ -43,7 +43,7 @@ namespace whilelang
     };
 
     auto pair_with = [pop_until](Make &m, Token preceding, Token following) {
-      pop_until(m, preceding, {Paren, File});
+      pop_until(m, preceding, {Paren, Brace, File});
       m.term();
 
       if (!m.in(preceding)) {
@@ -90,6 +90,7 @@ namespace whilelang
         "<" >> [infix](auto& m) { infix(m, LT); },
         "=" >> [infix](auto& m) { infix(m, Equals); },
 
+        // Constants
         "true\\b" >> [](auto& m) { m.add(True); },
         "false\\b" >> [](auto& m) { m.add(False); },
 
@@ -98,6 +99,7 @@ namespace whilelang
         // Variables
         R"([_[:alpha:]][_[:alnum:]]*)" >> [](auto& m) { m.add(Ident); },
 
+        // Grouping
         "\\(" >> [](auto& m) { m.push(Paren); },
         "\\)" >> [pop_until](auto& m) { pop_until(m, Paren, {Brace}); m.term(); m.pop(Paren); },
 

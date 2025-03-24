@@ -73,7 +73,7 @@ namespace whilelang
     | (Assign <<= (expressions_grouping_construct - Assign)++[1])
     | (Paren  <<= expressions_grouping_construct)
     | (Brace  <<= ~expressions_grouping_construct)
-    | (Group  <<= expressions_parse_token++[1])
+    | (Group  <<= expressions_parse_token++)
     ;
 
     inline const wf::Wellformed statements_wf =

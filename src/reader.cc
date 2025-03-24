@@ -11,18 +11,9 @@ Reader reader()
     return {
       "while",
       {
+        // Parsing
         expressions(),
         statements(),
-//       atoms(),
-//       multiplication(),
-//       addsub(),
-//       comparison(),
-//       conjunction(),
-//       disjunction(),
-//       assignments(),
-//       loops(),
-//       conditionals(),
-//       expressions(),
       },
       whilelang::parser(),
     };
