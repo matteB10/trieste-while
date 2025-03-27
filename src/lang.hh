@@ -11,7 +11,7 @@ namespace whilelang
   inline const auto Program = TokenDef("program", flag::symtab | flag::defbeforeuse);
 
   // Statements
-  inline const auto Assign = TokenDef(":=");
+  inline const auto Assign = TokenDef(":=", flag::lookup);
 
   inline const auto Skip = TokenDef("skip");
 
@@ -24,10 +24,15 @@ namespace whilelang
   inline const auto While = TokenDef("while");
   inline const auto Do = TokenDef("do");
 
+  inline const auto Output = TokenDef("output");
+
   // Constants
   inline const auto Int = TokenDef("int", flag::print);
   inline const auto True = TokenDef("true");
   inline const auto False = TokenDef("false");
+
+  // Input
+  inline const auto Input = TokenDef("input");
 
   // Arithmetic operators
   inline const auto Add = TokenDef("+");

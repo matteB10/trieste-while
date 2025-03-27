@@ -14,6 +14,9 @@ Reader reader()
         // Parsing
         expressions(),
         statements(),
+
+        // Checking
+        check_refs(),
       },
       whilelang::parser(),
     };

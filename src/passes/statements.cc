@@ -11,6 +11,12 @@ namespace whilelang
             statements_wf,
             dir::bottomup | dir::once,
             {
+                T(File) << (T(Stmt)[Stmt] * End) >>
+                    [](Match &_) -> Node
+                    {
+                        return Program << _(Stmt);
+                    },
+
                 T(Skip)[Skip] >>
                     [](Match &_) -> Node
                     {
@@ -37,6 +43,12 @@ namespace whilelang
                     {
                         return Stmt << (While << _(BExpr)
                                               << _(Do));
+                    },
+
+                (T(Output) << T(AExpr)[AExpr]) >>
+                    [](Match &_) -> Node
+                    {
+                        return Stmt << (Output << _(AExpr));
                     },
 
                 T(Semi)[Semi] << T(Stmt) >>
@@ -154,6 +166,13 @@ namespace whilelang
                     {
                         return Error << (ErrorAst << _(Stmt))
                                      << (ErrorMsg ^ "Expected statement");
+                    },
+
+                In(Output) * Start * (!T(AExpr))[AExpr] >>
+                    [](Match &_) -> Node
+                    {
+                        return Error << (ErrorAst << _(AExpr))
+                                     << (ErrorMsg ^ "Expected expression");
                     },
 
                 In(Semi)[Semi] * (!T(Stmt))[Expr] >>

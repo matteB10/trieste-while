@@ -18,7 +18,7 @@ namespace whilelang
                         return Reapply << (BExpr << _(Expr));
                     },
 
-                T(Ident, Int)[Expr] >>
+                T(Ident, Int, Input)[Expr] >>
                     [](Match &_) -> Node
                     {
                         return Reapply << (AExpr << _(Expr));

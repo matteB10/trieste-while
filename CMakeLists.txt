@@ -16,6 +16,7 @@ src/main.cc
 src/parser.cc
 src/passes/expressions.cc
 src/passes/statements.cc
+src/passes/check_refs.cc
 )
 
 target_link_libraries(while

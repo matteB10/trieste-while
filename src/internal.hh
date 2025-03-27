@@ -8,12 +8,14 @@ namespace whilelang
   Parse parser();
   PassDef expressions();
   PassDef statements();
+  PassDef check_refs();
 
   inline const auto parse_token =
     Skip |
     If | Then | Else |
     While | Do |
-    Int | Ident |
+    Output |
+    Int | Ident | Input |
     True | False | Not |
     Paren | Brace
     ;
@@ -35,6 +37,7 @@ namespace whilelang
     | (Else   <<= ~grouping_construct)
     | (While  <<= ~grouping_construct)
     | (Do     <<= ~grouping_construct)
+    | (Output <<= ~grouping_construct)
     | (Assign <<= (grouping_construct - Assign)++[1])
     | (Add    <<= (grouping_construct - Add)++[1])
     | (Sub    <<= (grouping_construct - Sub)++[1])
@@ -48,13 +51,13 @@ namespace whilelang
     | (Group  <<= parse_token++)
     ;
 
-  inline const auto expressions_parse_token = parse_token - Not - True - False - Int - Ident;
+  inline const auto expressions_parse_token = parse_token - Not - True - False - Int - Ident - Input;
   inline const auto expressions_grouping_construct = (grouping_construct - Add - Sub - Mul - LT - Equals - And - Or) | AExpr | BExpr;
 
   inline const wf::Wellformed expressions_wf =
     parse_wf
     | (File   <<= ~expressions_grouping_construct)
-    | (AExpr  <<= (Int | Ident | Mul | Add | Sub))
+    | (AExpr  <<= (Int | Ident | Mul | Add | Sub | Input))
     | (BExpr  <<= (True | False | Not | Equals | LT | And | Or))
     | (Add    <<= AExpr++[2])
     | (Sub    <<= AExpr++[2])
@@ -70,6 +73,7 @@ namespace whilelang
     | (Else   <<= ~expressions_grouping_construct)
     | (While  <<= ~expressions_grouping_construct)
     | (Do     <<= ~expressions_grouping_construct)
+    | (Output <<= ~expressions_grouping_construct)
     | (Assign <<= (expressions_grouping_construct - Assign)++[1])
     | (Paren  <<= expressions_grouping_construct)
     | (Brace  <<= ~expressions_grouping_construct)
@@ -78,11 +82,13 @@ namespace whilelang
 
     inline const wf::Wellformed statements_wf =
     (expressions_wf - Group - Paren - Do - Then - Else)
-    | (File <<= ~Stmt)
-    | (Stmt <<= (Skip | Assign | While | If | Semi))
+    | (Top <<= ~Program)
+    | (Program <<= Stmt)
+    | (Stmt <<= (Skip | Assign | While | If | Output | Semi))
     | (If <<= BExpr * (Then >>= Stmt) * (Else >>= Stmt))
     | (While <<= BExpr * (Do >>= Stmt))
-    | (Assign <<= (Ident * AExpr))
+    | (Assign <<= Ident * AExpr)[Ident]
+    | (Output <<= AExpr)
     | (Brace <<= expressions_grouping_construct)
     | (Semi <<= Stmt++[1])
     ;

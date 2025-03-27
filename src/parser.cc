@@ -69,7 +69,7 @@ namespace whilelang
 
         "skip" >> [](auto& m) { m.add(Skip); },
 
-        ";" >> [](auto& m) { m.seq(Semi, {Add, Sub, Mul, Equals, LT, And, Or, Assign, Else, Do, Group}); },
+        ";" >> [](auto& m) { m.seq(Semi, {Add, Sub, Mul, Equals, LT, And, Or, Assign, Else, Do, Output, Group}); },
 
         "if\\b" >> [](auto& m) { m.push(If); },
         "then\\b" >> [pair_with](auto& m) { pair_with(m, If, Then); },
@@ -77,6 +77,8 @@ namespace whilelang
 
         "while\\b" >> [](auto& m) { m.push(While); },
         "do\\b" >> [pair_with](auto& m) { pair_with(m, While, Do); },
+
+        "output\\b" >> [](auto& m) { m.push(Output); },
 
         // Expressions
         R"(\+)" >> [infix](auto& m) { infix(m, Add); },
@@ -95,6 +97,9 @@ namespace whilelang
         "false\\b" >> [](auto& m) { m.add(False); },
 
         "[[:digit:]]+" >> [](auto& m) { m.add(Int); },
+
+        // Input
+        "input\\b" >> [](auto& m) { m.add(Input); },
 
         // Variables
         R"([_[:alpha:]][_[:alnum:]]*)" >> [](auto& m) { m.add(Ident); },
