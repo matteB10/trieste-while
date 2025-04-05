@@ -6,64 +6,66 @@ namespace whilelang
 
     PassDef expressions()
     {
+        auto UNHANDLED = --In(BExpr, AExpr);
         return {
             "expressions",
             expressions_wf,
-            dir::bottomup | dir::once,
+            dir::bottomup,
             {
-                // All rules Reapply to be able to immediately check for errors
+                UNHANDLED *
                 T(True, False)[Expr] >>
                     [](Match &_) -> Node
                     {
-                        return Reapply << (BExpr << _(Expr));
+                        return BExpr << _(Expr);
                     },
 
+                UNHANDLED *
                 T(Ident, Int, Input)[Expr] >>
                     [](Match &_) -> Node
                     {
-                        return Reapply << (AExpr << _(Expr));
+                        return AExpr << _(Expr);
                     },
 
-                T(Not)[Not] * T(True, False)[Expr] >>
+                UNHANDLED *
+                (T(Not) << End) * T(BExpr)[BExpr] >>
                     [](Match &_) -> Node
                     {
-                        return Reapply << (BExpr << (_(Not) << (BExpr << _(Expr))));
+                        return BExpr << (Not << _(BExpr));
                     },
 
-                T(Not)[Not] * T(Paren)[Paren] >>
+                UNHANDLED *
+                T(Add, Sub, Mul)[Op] << (T(AExpr) * T(AExpr)++) >>
                     [](Match &_) -> Node
                     {
-                        return Reapply << (BExpr << (_(Not) << _(Paren)));
+                        return AExpr << _(Op);
                     },
 
-                T(Group) << (T(AExpr, BExpr)[Expr] * End) >>
+                UNHANDLED *
+                T(Equals, LT)[Op] << (T(AExpr) * T(AExpr) * End) >>
                     [](Match &_) -> Node
                     {
-                        return Reapply << _(Expr);
+                        return BExpr << _(Op);
                     },
 
-                T(Add, Sub, Mul)[Op] << (T(AExpr, Paren) * T(AExpr, Paren)) >>
+                UNHANDLED *
+                T(And, Or)[Op] << (T(BExpr) * T(BExpr)) >>
                     [](Match &_) -> Node
                     {
-                        return Reapply << (AExpr << _(Op));
+                        return BExpr << _(Op);
                     },
 
-                T(Equals, LT)[Op] << (T(AExpr, Paren) * T(AExpr, Paren) * End) >>
-                    [](Match &_) -> Node
-                    {
-                        return Reapply << (BExpr << _(Op));
-                    },
-
-                T(And, Or)[Op] << (T(BExpr, Paren) * T(BExpr, Paren)) >>
-                    [](Match &_) -> Node
-                    {
-                        return Reapply << (BExpr << _(Op));
-                    },
-
+                UNHANDLED *
                 T(Paren) << (T(AExpr, BExpr)[Expr] * End) >>
                     [](Match &_) -> Node
                     {
-                        return Reapply << _(Expr);
+                        return _(Expr);
+                    },
+
+                UNHANDLED *
+                T(Group) << (T(AExpr, BExpr)[Expr] * End) >>
+                    [](Match &_) -> Node
+                    {
+                        return _(Expr);
                     },
 
                 // Error rules
@@ -85,10 +87,10 @@ namespace whilelang
                     [](Match &_) -> Node
                     {
                         return Error << (ErrorAst << _(Rhs))
-                                     << (ErrorMsg ^ "Not an expression");
+                                     << (ErrorMsg ^ ((std::string)"Unexpected " + _(Rhs)->type().str()));
                     },
 
-                T(Not)[Not] * End >>
+                (T(Not)[Not] << End) * End >>
                     [](Match &_) -> Node
                     {
                         return Error << (ErrorAst << _(Not))
@@ -137,7 +139,7 @@ namespace whilelang
                                      << (ErrorMsg ^ "Expected operand");
                     },
 
-                In(And, Or) * (!T(BExpr, Paren))[Expr] >>
+                In(And, Or) * (!T(BExpr))[Expr] >>
                     [](Match& _) -> Node
                     {
                         return Error << (ErrorAst << _(Expr))
