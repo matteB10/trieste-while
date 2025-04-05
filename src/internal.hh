@@ -81,16 +81,19 @@ namespace whilelang
     ;
 
     inline const wf::Wellformed statements_wf =
-    (expressions_wf - Group - Paren - Do - Then - Else)
-    | (Top <<= ~Program)
-    | (Program <<= Stmt)
-    | (Stmt <<= (Skip | Assign | While | If | Output | Semi))
-    | (If <<= BExpr * (Then >>= Stmt) * (Else >>= Stmt))
-    | (While <<= BExpr * (Do >>= Stmt))
-    | (Assign <<= Ident * AExpr)[Ident]
-    | (Output <<= AExpr)
-    | (Brace <<= expressions_grouping_construct)
-    | (Semi <<= Stmt++[1])
-    ;
+      (expressions_wf - Group - Paren - Do - Then - Else)
+      | (Top <<= ~Program)
+      | (Program <<= Stmt)
+      | (Stmt <<= (Skip | Assign | While | If | Output | Semi))
+      | (If <<= BExpr * (Then >>= Stmt) * (Else >>= Stmt))
+      | (While <<= BExpr * (Do >>= Stmt))
+      | (Assign <<= Ident * AExpr)[Ident]
+      | (Output <<= AExpr)
+      | (Brace <<= expressions_grouping_construct)
+      | (Semi <<= Stmt++[1])
+      ;
+
+    inline const wf::Wellformed eval_wf =
+      statements_wf - Program;
 
 }

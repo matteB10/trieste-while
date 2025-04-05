@@ -1,8 +1,8 @@
 n := input;
 p := 1;
 i := n;
-while 0 < n do {
+while 0 < i do {
   p := i * p;
   i := i - 1;
-}
+};
 output p;
