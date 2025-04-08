@@ -6,6 +6,7 @@ namespace whilelang
   using namespace trieste;
 
   Reader reader();
+  Rewriter interpret();
 
   // Program
   inline const auto Program = TokenDef("program", flag::symtab | flag::defbeforeuse);
@@ -64,4 +65,7 @@ namespace whilelang
   inline const auto Lhs = TokenDef("lhs");
   inline const auto Rhs = TokenDef("rhs");
   inline const auto Op = TokenDef("op");
+
+  // Evaluation
+  inline const auto Eval = TokenDef("eval");
 }
