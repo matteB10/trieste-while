@@ -1,0 +1,7 @@
+build
+*.trieste
+.vscode
+.cache
+*.out
+examples/generated.while
+stats_result.txt

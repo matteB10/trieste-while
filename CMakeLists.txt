@@ -6,7 +6,7 @@ include(FetchContent)
 FetchContent_Declare(
   trieste
   GIT_REPOSITORY https://github.com/microsoft/Trieste
-  GIT_TAG 370ad85aa31f316f8ac39dcaaf6f4218901242e4
+  GIT_TAG 548af71bf7a324ddbd48aeb1b1f46fd1a7f4fd42 
   )
 
 FetchContent_MakeAvailable(trieste)
@@ -16,20 +16,43 @@ src/while.cc
 src/parser.cc
 src/reader.cc
 src/interpreter.cc
+src/optimization_analysis.cc
+
+src/utils.cc
+src/control_flow.cc
+
+src/passes/generate_mermaid.cc
+
+src/passes/functions.cc
 src/passes/expressions.cc
 src/passes/statements.cc
 src/passes/check_refs.cc
 src/passes/eval.cc
+src/passes/unique_variables.cc
+src/passes/gather_stats.cc
+src/passes/normalization.cc
+src/passes/gather_control_flow.cc
+src/passes/zero_analysis.cc
+src/passes/constant_folding.cc
+src/passes/dead_code_elimination.cc
 )
 
 add_executable(while_trieste
 src/while_trieste.cc
 src/parser.cc
 src/reader.cc
+
+src/passes/generate_mermaid.cc
+src/utils.cc
+src/control_flow.cc
+
+src/passes/functions.cc
 src/passes/expressions.cc
 src/passes/statements.cc
 src/passes/check_refs.cc
-src/passes/eval.cc
+src/passes/unique_variables.cc
+src/passes/gather_stats.cc
+src/passes/normalization.cc
 )
 
 target_link_libraries(while
@@ -44,3 +67,6 @@ target_link_libraries(while_trieste
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(TRIESTE_BUILD_SAMPLES OFF)
+# set(CMAKE_CXX_FLAGS "-pg")

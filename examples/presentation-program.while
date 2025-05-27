@@ -1,0 +1,7 @@
+fun square(x) {
+	return x * x;
+}
+
+fun main() {
+	output square(5);
+}

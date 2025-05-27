@@ -1,7 +1,9 @@
-#include <trieste/driver.h>
 #include "lang.hh"
 
-int main(int argc, char** argv)
-{
-  return trieste::Driver(whilelang::reader()).run(argc, argv);
+#include <trieste/driver.h>
+
+int main(int argc, char **argv) {
+    auto vars_map = std::make_shared<std::map<std::string, std::string>>();
+    return trieste::Driver(whilelang::reader(vars_map, false, false))
+        .run(argc, argv);
 }

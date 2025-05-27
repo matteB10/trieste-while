@@ -1,0 +1,17 @@
+fun main() {
+	var a;
+	var th;
+	var el;
+
+	a := 1;
+	th:=0;
+	el:=0;
+
+	if (2 < 3 and th = el) and (a = 1) then {th := 1; th:=2; } else {th := 2; el := 2};
+
+	a := 3;
+	a := 0;
+	output a;
+	output th;
+	output el;
+}

@@ -2,16 +2,13 @@
 
 namespace whilelang {
 
-using namespace trieste;
+    using namespace trieste;
 
-Rewriter interpret()
-  {
-    return {
-      "interpreter",
-      {
-        eval()
-      },
-      whilelang::statements_wf,
-    };
-  }
+    Rewriter interpret() {
+        return {
+            "interpreter",
+            {eval()},
+            whilelang::normalization_wf,
+        };
+    }
 }
