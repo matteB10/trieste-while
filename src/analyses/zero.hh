@@ -13,6 +13,25 @@ namespace whilelang {
             return type == other.type;
         }
 
+        ZeroLatticeValue join(const ZeroLatticeValue &other) const {
+            auto top = ZeroLatticeValue::top();
+            auto zero = ZeroLatticeValue::zero();
+            auto non_zero = ZeroLatticeValue::non_zero();
+            auto bottom = ZeroLatticeValue::bottom();
+
+            if (*this == bottom) {
+                return other;
+            } else if (other == bottom) {
+                return *this;
+            } else if (*this == zero && other == zero) {
+                return zero;
+            } else if (*this == non_zero && other == non_zero) {
+                return non_zero;
+            }
+
+            return top;
+        }
+
         friend std::ostream &
         operator<<(std::ostream &os, const ZeroLatticeValue &value) {
             switch (value.type) {
@@ -46,27 +65,9 @@ namespace whilelang {
         }
     };
 
-    using State = std::unordered_map<std::string, ZeroLatticeValue>;
-    using StateTable = DataFlowAnalysis<State, ZeroLatticeValue>::StateTable;
+    using ZeroState = std::map<std::string, ZeroLatticeValue>;
 
-    inline std::ostream &operator<<(std::ostream &os, const State &state) {
-        for (const auto &[_, value] : state) {
-            os << std::setw(PRINT_WIDTH) << value;
-        }
-        return os;
-    }
-
-    inline State zero_create_state(const Vars &vars) {
-        State state = State();
-
-        for (auto var : vars) {
-            state[var] = ZeroLatticeValue::bottom();
-        }
-        return state;
-    }
-
-    inline auto handle_atom = [](const Node atom,
-                                 State &incoming_state) -> ZeroLatticeValue {
+    ZeroLatticeValue handle_atom(const Node atom, ZeroState &incoming_state) {
         if (atom == Int) {
             return get_int_value(atom) == 0 ? ZeroLatticeValue::zero() :
                                               ZeroLatticeValue::non_zero();
@@ -78,95 +79,91 @@ namespace whilelang {
         }
     };
 
-    inline ZeroLatticeValue
-    lattice_join(const ZeroLatticeValue &x, const ZeroLatticeValue &y) {
-        auto top = ZeroLatticeValue::top();
-        auto zero = ZeroLatticeValue::zero();
-        auto non_zero = ZeroLatticeValue::non_zero();
-        auto bottom = ZeroLatticeValue::bottom();
+    struct ZeroImpl {
+		using StateTable = NodeMap<ZeroState>;
 
-        if (x == bottom) {
-            return y;
-        }
-        if (y == bottom) {
-            return x;
+        static ZeroState create_state(const Vars &vars) {
+            ZeroState state = ZeroState();
+
+            for (auto var : vars) {
+                state[var] = ZeroLatticeValue::bottom();
+            }
+            return state;
         }
 
-        if (x == top || y == top) {
-            return top;
-        }
+        static bool state_join(ZeroState &x, const ZeroState &y) {
+            bool changed = false;
 
-        if (x == zero && y == zero) {
-            return zero;
-        }
-        if (x == non_zero && y == non_zero) {
-            return non_zero;
-        }
+            auto it1 = x.begin();
+            auto it2 = y.begin();
 
-        return top;
-    }
+            while (it1 != x.end() && it2 != y.end()) {
+                auto join_res = it1->second.join(it2->second);
 
-    inline bool zero_state_join(State &x, const State &y) {
-        bool changed = false;
-
-        for (const auto &[key, val_y] : y) {
-            auto res = x.find(key);
-
-            if (res != x.end()) {
-                auto join_res = lattice_join(res->second, val_y);
-                if (!(res->second == join_res)) {
-                    x[key] = join_res;
+                if (join_res != it1->second) {
+                    it1->second = join_res;
                     changed = true;
                 }
-            } else {
-                throw std::runtime_error("State do not have the same keys");
+                it1++;
+                it2++;
             }
+
+            if (it1 != x.end() || it2 != y.end()) {
+                throw std::runtime_error("States are not comparable");
+            }
+
+            return changed;
         }
-        return changed;
-    }
 
-    inline State zero_flow(
-        const Node &inst,
-        StateTable &state_table,
-        std::shared_ptr<ControlFlow> cfg) {
-        auto incoming_state = state_table[inst];
-        if (inst == Assign) {
-            auto var = get_identifier(inst / Ident);
-            Node rhs = (inst / Rhs) / Expr;
+        static ZeroState flow(
+            const Node &inst,
+            StateTable &state_table,
+            std::shared_ptr<ControlFlow> cfg) {
+            auto incoming_state = state_table[inst];
+            if (inst == Assign) {
+                auto var = get_identifier(inst / Ident);
+                Node rhs = (inst / Rhs) / Expr;
 
-            if (rhs == Atom) {
-                auto atom = rhs / Expr;
-                incoming_state[var] = handle_atom(atom, incoming_state);
-            } else if (rhs == FunCall) {
-                auto prevs = cfg->predecessors(inst);
-                ZeroLatticeValue val = ZeroLatticeValue::bottom();
+                if (rhs == Atom) {
+                    auto atom = rhs / Expr;
+                    incoming_state[var] = handle_atom(atom, incoming_state);
+                } else if (rhs == FunCall) {
+                    auto prevs = cfg->predecessors(inst);
+                    ZeroLatticeValue val = ZeroLatticeValue::bottom();
 
-                for (auto node : prevs) {
-                    if (node == Return) {
-                        val = lattice_join(
-                            val,
-                            handle_atom((node / Atom) / Expr, incoming_state));
+                    for (auto node : prevs) {
+                        if (node == Return) {
+                            val = val.join(handle_atom(
+                                (node / Atom) / Expr, incoming_state));
+                        }
                     }
+
+                    auto pre_fun_call_state = state_table[rhs];
+                    pre_fun_call_state[var] = val;
+                    return pre_fun_call_state;
                 }
+            } else if (inst == FunCall) {
+                auto params = cfg->get_fun_def(inst) / ParamList;
+                auto args = inst / ArgList;
 
-                auto pre_fun_call_state = state_table[rhs];
-                pre_fun_call_state[var] = val;
-                return pre_fun_call_state;
+                for (size_t i = 0; i < params->size(); i++) {
+                    auto param_id = params->at(i) / Ident;
+                    auto arg = args->at(i) / Atom;
+                    auto var = get_identifier(param_id);
+
+                    incoming_state[var] =
+                        handle_atom(arg / Expr, incoming_state);
+                }
             }
-        } else if (inst == FunCall) {
-            auto params = cfg->get_fun_def(inst) / ParamList;
-            auto args = inst / ArgList;
 
-            for (size_t i = 0; i < params->size(); i++) {
-                auto param_id = params->at(i) / Ident;
-                auto arg = args->at(i) / Atom;
-                auto var = get_identifier(param_id);
-
-                incoming_state[var] = handle_atom(arg / Expr, incoming_state);
-            }
+            return incoming_state;
         }
+    };
 
-        return incoming_state;
+    std::ostream &operator<<(std::ostream &os, const ZeroState &state) {
+        for (const auto &[_, value] : state) {
+            os << std::setw(PRINT_WIDTH) << value;
+        }
+        return os;
     }
-
 }
