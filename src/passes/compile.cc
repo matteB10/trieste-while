@@ -227,7 +227,6 @@ namespace whilelang {
                         auto fun_id = std::string((fun_call / FunId)->location().view());
                         auto args = fun_call / ArgList;
 
-                        Node tmp = vbcc::LocalId ^ "$_";
                         Node name = vbcc::FunctionId ^ ("@" + fun_id);
                         Node args_node = vbcc::Args;
 
@@ -277,7 +276,7 @@ namespace whilelang {
                     (T(Output) << (T(Atom)[Atom]))) >>
                     [](Match &_) -> Node {
                         auto atom = _(Atom);
-                        auto tmp = vbcc::LocalId ^ "$_";
+                        auto tmp = vbcc::LocalId ^ _.fresh();
                         auto name = vbcc::SymbolId ^ "@printval";
                         auto args = vbcc::Args << (vbcc::Arg << vbcc::ArgCopy << (Compile << atom));
                         return vbcc::FFI << tmp
