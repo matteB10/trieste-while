@@ -10,6 +10,7 @@ namespace whilelang {
         bool run_mermaid);
     Rewriter interpret();
     Rewriter optimization_analysis(bool run_zero_analysis);
+    Rewriter inlining_rewriter();
     Rewriter compiler();
 
     // Program
