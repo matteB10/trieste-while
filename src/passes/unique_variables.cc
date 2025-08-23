@@ -17,7 +17,7 @@ namespace whilelang {
                     auto new_var = vars_map->find(var);
 
                     if (new_var == vars_map->end()) {
-                        auto new_name = std::string(_(Ident)->fresh().view());
+                        auto new_name = std::string(_.fresh().view());
                         vars_map->insert({var, new_name});
 
                         return Ident ^ new_name;

@@ -13,7 +13,7 @@ namespace whilelang {
                   [](Match &_) -> Node {
                     auto body = _(Body);
                     if (body->at(0) / Stmt == Label) return NoChange;
-                    body->push_front(Stmt << (Label ^ body->fresh()));
+                    body->push_front(Stmt << (Label ^ _.fresh()));
 
                     return Stmt << body;
                   },
@@ -21,10 +21,10 @@ namespace whilelang {
                 T(Stmt) <<
                   (T(If) << (T(BAtom)[BAtom] * T(Stmt)[Then] * T(Stmt)[Else])) >>
                     [](Match &_) -> Node {
-                        auto then_label = Label ^ _(BAtom)->fresh();
-                        auto else_label = Label ^ _(BAtom)->fresh();
-                        auto end_label = Label ^ _(BAtom)->fresh();
-                        auto cond_ident = Ident ^ _(BAtom)->fresh();
+                        auto then_label = Label ^ _.fresh();
+                        auto else_label = Label ^ _.fresh();
+                        auto end_label = Label ^ _.fresh();
+                        auto cond_ident = Ident ^ _.fresh();
 
                         auto cond_assign = Stmt << (Assign << cond_ident
                                                            << (BExpr << _(BAtom)));
@@ -46,10 +46,10 @@ namespace whilelang {
                 T(Stmt) <<
                   (T(While) << (T(Stmt)[Stmt] * T(BAtom)[BAtom] * T(Stmt)[Do])) >>
                       [](Match &_) -> Node {
-                            auto cond_label = Label ^ _(BAtom)->fresh();
-                            auto do_label = Label ^ _(BAtom)->fresh();
-                            auto end_label = Label ^ _(BAtom)->fresh();
-                            auto cond_ident = Ident ^ _(BAtom)->fresh();
+                            auto cond_label = Label ^ _.fresh();
+                            auto do_label = Label ^ _.fresh();
+                            auto end_label = Label ^ _.fresh();
+                            auto cond_ident = Ident ^ _.fresh();
 
                             auto cond_stmt = _(Stmt);
                             auto body = _(Do);
@@ -79,7 +79,7 @@ namespace whilelang {
                 T(Stmt) <<
                   (T(Return) << (T(Atom) << T(Int)[Int])) >>
                       [](Match &_) -> Node {
-                            auto tmp = Ident ^ _(Int)->fresh();
+                            auto tmp = Ident ^ _.fresh();
                             auto assign = Stmt << (Assign << tmp
                                                           << (AExpr << (Atom << _(Int))));
                             return Seq << assign

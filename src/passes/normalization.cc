@@ -104,7 +104,7 @@ namespace whilelang {
 
                 T(Normalize) << (T(AExpr) << T(FunCall)[FunCall]) >>
                     [](Match &_) -> Node {
-                    auto id = Ident ^ _(FunCall)->fresh();
+                    auto id = Ident ^ _.fresh();
                     auto fun_id = _(FunCall) / FunId;
                     Node args = ArgList;
 
@@ -125,7 +125,7 @@ namespace whilelang {
                 T(Normalize) << (T(AExpr)[AExpr] << T(Add, Sub, Mul)[Op]) >>
                     [](Match &_) -> Node {
                     Node op = _(Op);
-                    auto id = Ident ^ _(Op)->fresh();
+                    auto id = Ident ^ _.fresh();
 
                     auto curr = op->front();
 
@@ -195,7 +195,7 @@ namespace whilelang {
                     Node lhs = _(Op) / Lhs;
                     Node rhs = _(Op) / Rhs;
 
-                    auto id = Ident ^ _(Op)->fresh();
+                    auto id = Ident ^ _.fresh();
 
                     auto assign = Assign
                         << id
@@ -209,7 +209,7 @@ namespace whilelang {
                 T(Normalize) << (T(BExpr)[BExpr] << T(And, Or)[Op]) >>
                     [](Match &_) -> Node {
                     Node op = _(Op);
-                    auto id = Ident ^ _(Op)->fresh();
+                    auto id = Ident ^ _.fresh();
                     auto curr = op->front();
 
                     // Make sure binary ops have exactly two operands
@@ -233,7 +233,7 @@ namespace whilelang {
                 T(Normalize) << (T(BExpr)[BExpr] << T(Not)[Op]) >>
                     [](Match &_) -> Node {
                     auto expr = _(Op) / Expr;
-                    auto id = Ident ^ _(Op)->fresh();
+                    auto id = Ident ^ _.fresh();
 
                     auto assign = Assign
                         << id
