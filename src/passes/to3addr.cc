@@ -88,7 +88,7 @@ namespace whilelang {
 
                 In(Block) * T(Stmt) << T(Block)[Block] >>
                     [](Match &_) -> Node {
-                        return Lift << Block << *_(Block);
+                        return Seq << *_(Block);
                     },
             },
         };
